@@ -20,16 +20,25 @@ sudo apt install clang llvm graphviz
 
 2. Исходный код
 Пример программы main.c:
+
 #include <stdio.h>
+
 int add(int a, int b) {
-    return a + b;
+
+    return a + b;   
+    
 }
 
 int main() {
-    return add(3, 4);
+
+    return add(3, 4);  
+    
 }
+
 3. Получение AST
+
 Команда для генерации AST:
+
 clang -Xclang -ast-dump -fsyntax-only main.c
 
 
@@ -46,25 +55,41 @@ clang -S -emit-llvm main.c -o main.ll
 
 5. Оптимизация IR
 Команда для генерации неоптимизированного IR:
+
 clang -O0 -S -emit-llvm main.c -o main_O0.ll
+
 Особенности IR до оптимизации:
+
 •	Все переменные (a, b) размещены в памяти через alloca.
+
 •	Множество операций load и store.
+
 •	Функция add вызывается как отдельная функция.
 
 ![image](https://github.com/user-attachments/assets/7f66ccee-3e35-4e5e-b764-48b1d55b7dd3)
 
 Команда для генерации оптимизированного IR с уровнем -O2:
+
 clang -O2 -S -emit-llvm main.c -o main_O2.ll
+
 Оптимизация -O2 включает более 30 различных оптимизаций, таких как:
+
 •	-inline: встраивание небольших функций (встраивает add в main).
+
 •	-constprop: подстановка констант: если аргументы функции известны (например, add(3, 4)), результат (7) вычисляется на этапе компиляции;
+
 •	-mem2reg: перевод переменных из памяти в регистры (SSA).
+
 •	-instcombine: объединение и упрощение инструкций.
+
 •	-simplifycfg: оптимизация структуры блоков.
+
 •	-reassociate, -gvn, -sroa, -dce и другие.
+
 Особенности IR после оптимизации:
+
 •	Функция square исчезла (встроена через -inline и вычислена через -constprop).
+
 •	Переменные, alloca, store, load удалены (-mem2reg, -dce)..
 
 
@@ -77,29 +102,48 @@ diff main_O0.ll main_O2.ll
 ![image](https://github.com/user-attachments/assets/4984b609-7b70-4542-b345-b065ed77849d)
 
 Изменения после оптимизации:
+
 •	Переменные типа alloca удалены.
+
 •	Код переведён в SSA-форму.
+
 •	Улучшена читаемость и упрощён поток управления.
+
 6. Граф потока управления программы
+   
 Команда для генерации оптимизированного LLVM IR:
+
 clang -O2 -S -emit-llvm main.c -o main.ll
+
 Команда для генерации .dot-файлов CFG:
+
 opt -passes=dot-cfg -disable-output main.ll
 
 ![image](https://github.com/user-attachments/assets/3f0584bd-ca1a-40ee-96c4-d13a02e76cdf)
 
 Вывод:
 find . -name "*.dot"
+
 ./.main.dot
+
 ./.square.dot
+
 Создаются DOT-файлы:
+
 •	.main.dot — для функции main.
+
 •	.square.dot — для функции square (если не была удалена оптимизацией).
+
 Команды для преобразования .dot в .png:
+
 dot -Tpng .main.dot -o cfg_main.png
+
 dot -Tpng .add.dot -o cfg_add.png
+
 Команды для просмотра CFG:
+
 xdg-open cfg_main.png
+
 xdg-open cfg_add.png
 
 
@@ -108,8 +152,11 @@ xdg-open cfg_add.png
 ![image](https://github.com/user-attachments/assets/acb66d68-7b0e-4e72-a3c5-575245ce504b)
 
 Выводы
+
 •	С помощью Clang можно получить полную структуру AST, IR и CFG.
+
 •	LLVM предоставляет гибкие инструменты анализа и оптимизации.
+
 •	Промежуточное представление (IR) удобно для написания компиляторных трансформаций.
 
 
